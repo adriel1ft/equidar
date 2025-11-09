@@ -15,3 +15,12 @@ def compute_score(
     if not m:
         raise HTTPException(status_code=404, detail="Municipality not found")
     return ssvc.score(m, params)
+
+@router.get("/", response_model=list[ScoreOut])
+def compute_scores(
+    params: ScoreParams = Depends(),
+    msvc = Depends(get_municipality_service),
+    ssvc = Depends(get_scoring_service),
+):
+    municipalities = msvc.list_all()
+    return [ssvc.score(m, params) for m in municipalities]

@@ -22,3 +22,6 @@ class MunicipalityService:
         if municipality:
             return municipality.polygon
         return None
+    
+    def list_all(self) -> List[Municipality]:
+        return self.items
