@@ -28,3 +28,18 @@ def get_municipality_polygon(municipality_id: str, svc = Depends(get_municipalit
     if not polygon:
         raise HTTPException(status_code=404, detail="Municipality polygon not found")
     return polygon
+
+@router.get("/{municipality_id}/schools", response_model=List[dict])
+def get_municipality_schools(municipality_id: str, svc = Depends(get_municipality_service)):
+    schools = svc.get_all_schools_for_city(municipality_id)
+    if not schools:
+        raise HTTPException(status_code=404, detail="Schools not found for this municipality")
+    return schools
+
+# get municipalities rankings
+@router.get("/ranking")
+def get_municipality_rankings(svc = Depends(get_municipality_service)):
+    rankings = svc.get_rankings()
+    if not rankings:
+        raise HTTPException(status_code=404, detail="Rankings not found")
+    return rankings
