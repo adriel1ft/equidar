@@ -1,0 +1,22 @@
+[
+  {
+    "id": "250750",
+    "name": "João Pessoa",
+    "state": "PB",
+    "population": 825796,
+    "internet_coverage_pct": 84.2,
+    "accessibility_index": 0.62,
+    "school_infrastructure_index": 0.58,
+    "revenue_per_capita": 4200.0
+  },
+  {
+    "id": "251370",
+    "name": "Sousa",
+    "state": "PB",
+    "population": 70000,
+    "internet_coverage_pct": 61.0,
+    "accessibility_index": 0.45,
+    "school_infrastructure_index": 0.40,
+    "revenue_per_capita": 2600.0
+  }
+]
