@@ -4,7 +4,7 @@ from contextlib import asynccontextmanager
 
 from app.config import settings
 from app.deps import load_data, init_services
-from app.routes import municipalities, scores, agents, ideb
+from app.routes import municipalities, scores, agents, ideb, indicadores
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -38,6 +38,7 @@ app.include_router(municipalities.router)
 app.include_router(scores.router)
 app.include_router(agents.router)
 app.include_router(ideb.router)
+app.include_router(indicadores.router)
 
 @app.get("/healthz", tags=["misc"])
 def healthz():
