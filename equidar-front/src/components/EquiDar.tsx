@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { MapPin, Info, Share2 } from "lucide-react";
 import CarenciaMap from "./Mapping";
 import { SchoolDetailModal } from "./SchoolDetails";
+import { EquidarService } from "../services/api/EquidarService";
 
 /**
  * EquiDar – UI Wireframe (mobile‑first)
@@ -13,20 +14,341 @@ import { SchoolDetailModal } from "./SchoolDetails";
 
 // ---- Mock data (MVP placeholder) -----------------------------------------
 const MUNICIPIOS = [
-  { nome: "João Pessoa", carencia: 32 },
-  { nome: "Campina Grande", carencia: 58 },
-  { nome: "Patos", carencia: 71 },
-  { nome: "Sousa", carencia: 66 },
-  { nome: "Cajazeiras", carencia: 45 },
-  { nome: "Guarabira", carencia: 52 },
+  { id: 1, nome: "João Pessoa", carencia: 32, zona: "Urbana", populacao: 817511, escolasTotal: 184 },
+  { id: 2, nome: "Campina Grande", carencia: 58, zona: "Urbana", populacao: 402912, escolasTotal: 156 },
+  { id: 3, nome: "Patos", carencia: 71, zona: "Urbana", populacao: 108192, escolasTotal: 62 },
+  { id: 4, nome: "Sousa", carencia: 66, zona: "Mista", populacao: 69444, escolasTotal: 48 },
+  { id: 5, nome: "Cajazeiras", carencia: 45, zona: "Mista", populacao: 62576, escolasTotal: 42 },
+  { id: 6, nome: "Guarabira", carencia: 52, zona: "Mista", populacao: 59081, escolasTotal: 38 },
+  { id: 7, nome: "Santa Rita", carencia: 61, zona: "Urbana", populacao: 136851, escolasTotal: 76 },
+  { id: 8, nome: "Bayeux", carencia: 48, zona: "Urbana", populacao: 97010, escolasTotal: 54 }
 ];
 
 const ESCOLAS = [
-  { nome: "E. E. José Américo", municipio: "Campina Grande", ideb: 3.9, carencia: 82, faltas: ["biblioteca", "internet"] },
-  { nome: "E. M. Maria Bonita", municipio: "Itaporanga", ideb: 4.2, carencia: 74, faltas: ["acessibilidade", "laboratório"] },
-  { nome: "E. E. Frei Damião", municipio: "Sousa", ideb: 6.0, carencia: 76, faltas: ["laboratório", "internet"] },
-  { nome: "E. M. N. de Castro", municipio: "Patos", ideb: 3.7, carencia: 69, faltas: ["biblioteca", "acessibilidade"] },
-  { nome: "E. M. Monte Azul", municipio: "Cajazeiras", ideb: 4.8, carencia: 62, faltas: ["laboratório"] },
+  { 
+    id: 1, 
+    nome: "E. E. José Américo", 
+    municipio: "Campina Grande", 
+    ideb: 3.9, 
+    carencia: 82, 
+    rede: "Estadual",
+    zona: "Urbana",
+    alunos: 856,
+    professores: 42,
+    faltas: ["biblioteca", "internet", "quadra_esportiva"],
+    infraestrutura: {
+      agua: true,
+      energia: true,
+      esgoto: true,
+      acessibilidade: false,
+      laboratorioInformatica: false,
+      laboratorioQuimica: false,
+      bibliotecaAtiva: false,
+      internetBandaLarga: false,
+      refeitorio: true,
+      apoio_psicopedagogico: 0,
+      existencia_ambiente: 1,
+      acesso_transporte: 1
+    }
+  },
+  { 
+    id: 2, 
+    nome: "E. M. Maria Bonita", 
+    municipio: "Itaporanga", 
+    ideb: 4.2, 
+    carencia: 74, 
+    rede: "Municipal",
+    zona: "Rural",
+    alunos: 324,
+    professores: 18,
+    faltas: ["acessibilidade", "laboratório", "internet"],
+    infraestrutura: {
+      agua: true,
+      energia: true,
+      esgoto: false,
+      acessibilidade: false,
+      laboratorioInformatica: false,
+      laboratorioQuimica: false,
+      bibliotecaAtiva: true,
+      internetBandaLarga: false,
+      refeitorio: true,
+      apoio_psicopedagogico: 0,
+      existencia_ambiente: 0,
+      acesso_transporte: 1
+    }
+  },
+  { 
+    id: 3, 
+    nome: "E. E. Raul Córdula", 
+    municipio: "Campina Grande", 
+    ideb: 4.5, 
+    carencia: 65, 
+    rede: "Estadual",
+    zona: "Urbana",
+    alunos: 1024,
+    professores: 58,
+    faltas: ["laboratório química", "internet", "sala professores"],
+    infraestrutura: {
+      agua: true,
+      energia: true,
+      esgoto: true,
+      acessibilidade: true,
+      laboratorioInformatica: true,
+      laboratorioQuimica: false,
+      bibliotecaAtiva: true,
+      internetBandaLarga: false,
+      refeitorio: true,
+      apoio_psicopedagogico: 1,
+      existencia_ambiente: 1,
+      acesso_transporte: 1
+    }
+  },
+  { 
+    id: 4, 
+    nome: "E. M. Padre Zé", 
+    municipio: "Patos", 
+    ideb: 3.2, 
+    carencia: 88, 
+    rede: "Municipal",
+    zona: "Rural",
+    alunos: 187,
+    professores: 12,
+    faltas: ["água encanada", "esgoto", "internet", "laboratório", "biblioteca"],
+    infraestrutura: {
+      agua: false,
+      energia: true,
+      esgoto: false,
+      acessibilidade: false,
+      laboratorioInformatica: false,
+      laboratorioQuimica: false,
+      bibliotecaAtiva: false,
+      internetBandaLarga: false,
+      refeitorio: false,
+      apoio_psicopedagogico: 0,
+      existencia_ambiente: 0,
+      acesso_transporte: 0
+    }
+  },
+  { 
+    id: 5, 
+    nome: "E. E. Professor Lordão", 
+    municipio: "João Pessoa", 
+    ideb: 5.1, 
+    carencia: 28, 
+    rede: "Estadual",
+    zona: "Urbana",
+    alunos: 1456,
+    professores: 82,
+    faltas: ["quadra coberta"],
+    infraestrutura: {
+      agua: true,
+      energia: true,
+      esgoto: true,
+      acessibilidade: true,
+      laboratorioInformatica: true,
+      laboratorioQuimica: true,
+      bibliotecaAtiva: true,
+      internetBandaLarga: true,
+      refeitorio: true,
+      apoio_psicopedagogico: 1,
+      existencia_ambiente: 1,
+      acesso_transporte: 1
+    }
+  },
+  { 
+    id: 6, 
+    nome: "E. M. São Francisco", 
+    municipio: "Sousa", 
+    ideb: 3.7, 
+    carencia: 79, 
+    rede: "Municipal",
+    zona: "Rural",
+    alunos: 246,
+    professores: 15,
+    faltas: ["esgoto", "internet", "laboratório", "acessibilidade"],
+    infraestrutura: {
+      agua: true,
+      energia: true,
+      esgoto: false,
+      acessibilidade: false,
+      laboratorioInformatica: false,
+      laboratorioQuimica: false,
+      bibliotecaAtiva: false,
+      internetBandaLarga: false,
+      refeitorio: true,
+      apoio_psicopedagogico: 0,
+      existencia_ambiente: 0,
+      acesso_transporte: 1
+    }
+  },
+  { 
+    id: 7, 
+    nome: "E. E. Elpídio de Almeida", 
+    municipio: "Campina Grande", 
+    ideb: 4.8, 
+    carencia: 42, 
+    rede: "Estadual",
+    zona: "Urbana",
+    alunos: 1189,
+    professores: 65,
+    faltas: ["internet estável", "laboratório química"],
+    infraestrutura: {
+      agua: true,
+      energia: true,
+      esgoto: true,
+      acessibilidade: true,
+      laboratorioInformatica: true,
+      laboratorioQuimica: false,
+      bibliotecaAtiva: true,
+      internetBandaLarga: false,
+      refeitorio: true,
+      apoio_psicopedagogico: 1,
+      existencia_ambiente: 1,
+      acesso_transporte: 1
+    }
+  },
+  { 
+    id: 8, 
+    nome: "E. M. Nazaré de Souza", 
+    municipio: "Cajazeiras", 
+    ideb: 4.0, 
+    carencia: 56, 
+    rede: "Municipal",
+    zona: "Urbana",
+    alunos: 432,
+    professores: 28,
+    faltas: ["laboratório", "quadra esportiva", "internet"],
+    infraestrutura: {
+      agua: true,
+      energia: true,
+      esgoto: true,
+      acessibilidade: false,
+      laboratorioInformatica: false,
+      laboratorioQuimica: false,
+      bibliotecaAtiva: true,
+      internetBandaLarga: false,
+      refeitorio: true,
+      apoio_psicopedagogico: 0,
+      existencia_ambiente: 1,
+      acesso_transporte: 1
+    }
+  },
+  { 
+    id: 9, 
+    nome: "E. E. Monte Carmelo", 
+    municipio: "Santa Rita", 
+    ideb: 3.5, 
+    carencia: 71, 
+    rede: "Estadual",
+    zona: "Urbana",
+    alunos: 678,
+    professores: 38,
+    faltas: ["biblioteca", "internet", "laboratório química", "acessibilidade"],
+    infraestrutura: {
+      agua: true,
+      energia: true,
+      esgoto: true,
+      acessibilidade: false,
+      laboratorioInformatica: true,
+      laboratorioQuimica: false,
+      bibliotecaAtiva: false,
+      internetBandaLarga: false,
+      refeitorio: true,
+      apoio_psicopedagogico: 0,
+      existencia_ambiente: 1,
+      acesso_transporte: 1
+    }
+  },
+  { 
+    id: 10, 
+    nome: "E. M. Rosa Mística", 
+    municipio: "Guarabira", 
+    ideb: 4.3, 
+    carencia: 62, 
+    rede: "Municipal",
+    zona: "Rural",
+    alunos: 298,
+    professores: 19,
+    faltas: ["esgoto", "internet", "laboratório"],
+    infraestrutura: {
+      agua: true,
+      energia: true,
+      esgoto: false,
+      acessibilidade: false,
+      laboratorioInformatica: false,
+      laboratorioQuimica: false,
+      bibliotecaAtiva: true,
+      internetBandaLarga: false,
+      refeitorio: true,
+      apoio_psicopedagogico: 0,
+      existencia_ambiente: 0,
+      acesso_transporte: 1
+    }
+  },
+  { 
+    id: 11, 
+    nome: "E. E. Olivina Olívia", 
+    municipio: "João Pessoa", 
+    ideb: 4.7, 
+    carencia: 38, 
+    rede: "Estadual",
+    zona: "Urbana",
+    alunos: 945,
+    professores: 54,
+    faltas: ["laboratório química", "quadra coberta"],
+    infraestrutura: {
+      agua: true,
+      energia: true,
+      esgoto: true,
+      acessibilidade: true,
+      laboratorioInformatica: true,
+      laboratorioQuimica: false,
+      bibliotecaAtiva: true,
+      internetBandaLarga: true,
+      refeitorio: true,
+      apoio_psicopedagogico: 1,
+      existencia_ambiente: 1,
+      acesso_transporte: 1
+    }
+  },
+  { 
+    id: 12, 
+    nome: "E. M. Pedro Álvares Cabral", 
+    municipio: "Bayeux", 
+    ideb: 3.8, 
+    carencia: 68, 
+    rede: "Municipal",
+    zona: "Urbana",
+    alunos: 512,
+    professores: 31,
+    faltas: ["internet", "laboratório", "acessibilidade", "biblioteca"],
+    infraestrutura: {
+      agua: true,
+      energia: true,
+      esgoto: true,
+      acessibilidade: false,
+      laboratorioInformatica: false,
+      laboratorioQuimica: false,
+      bibliotecaAtiva: false,
+      internetBandaLarga: false,
+      refeitorio: true,
+      apoio_psicopedagogico: 0,
+      existencia_ambiente: 1,
+      acesso_transporte: 1
+    }
+  }
+];
+
+// Novo conjunto de dados para categorias de carência
+const CATEGORIAS_CARENCIA = [
+  { id: "biblioteca", nome: "Biblioteca", peso: 0.15 },
+  { id: "internet", nome: "Internet Banda Larga", peso: 0.15 },
+  { id: "laboratorio", nome: "Laboratório de Informática", peso: 0.12 },
+  { id: "acessibilidade", nome: "Acessibilidade", peso: 0.13 },
+  { id: "quadra_esportiva", nome: "Quadra Esportiva", peso: 0.10 },
+  { id: "refeitorio", nome: "Refeitório", peso: 0.12 },
+  { id: "agua_esgoto", nome: "Água e Esgoto", peso: 0.13 },
+  { id: "sala_professores", nome: "Sala dos Professores", peso: 0.10 }
 ];
 
 // ---- Helpers --------------------------------------------------------------
@@ -58,6 +380,30 @@ export default function EquiDarUI() {
   const [zonaFiltro, setZonaFiltro] = useState("");
   const [busca, setBusca] = useState("");
   const [selectedSchool, setSelectedSchool] = useState(null as Escola | null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [rankings, setRankings] = useState<any[]>([]);
+  const equidarService = new EquidarService();
+
+  useEffect(() => {
+    const fetchRankings = async () => {
+      setIsLoading(true);
+      try {
+        const data = await equidarService.getMunicipalityRankings();
+        setRankings(data.map(r => ({
+          id: r.municipality_id,
+          nome: r.municipality_name,
+          carencia: Math.round((1 - r.score) * 100),
+          detalhes: r.breakdown
+        })));
+      } catch (error) {
+        console.error('Erro ao carregar rankings:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchRankings();
+  }, []);
 
   useEffect(() => {
     runSelfTests();
@@ -71,6 +417,26 @@ export default function EquiDarUI() {
     return byMunicipio && byBusca;
   }).sort((a, b) => b.carencia - a.carencia);
 
+  const handleGenerateRanking = async () => {
+    try {
+      setIsLoading(true);
+      const params = {
+        municipalityId: municipioFiltro ? parseInt(municipioFiltro) : undefined,
+        regionType: redeFiltro || undefined,
+        isUrban: zonaFiltro ? zonaFiltro === "Urbana" : undefined
+      };
+
+      const ranking = await equidarService.getCareRankingByParameters(params);
+      // TODO: Atualizar o estado com os dados recebidos
+      console.log('Ranking recebido:', ranking);
+    } catch (error) {
+      console.error('Erro ao gerar ranking:', error);
+      // TODO: Adicionar tratamento de erro adequado
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 text-gray-800">
 
@@ -82,6 +448,7 @@ export default function EquiDarUI() {
             onChange={(e) => setBusca(e.target.value)}
             placeholder="Buscar escola ou município..."
             className="max-w-sm w-full px-3 py-2 rounded border"
+            disabled
           />
           <select className="px-3 py-2 rounded border" value={municipioFiltro} onChange={(e) => setMunicipioFiltro(e.target.value)}>
             <option value="">Município</option>
@@ -99,7 +466,12 @@ export default function EquiDarUI() {
             <option value="Urbana">Urbana</option>
             <option value="Rural">Rural</option>
           </select>
-          <button className="bg-green-600 text-white px-4 py-2 rounded">Gerar ranking</button>
+          <button className="bg-green-600 text-white px-4 py-2 rounded"
+          onClick={handleGenerateRanking}
+          disabled={isLoading}
+          >
+            {isLoading ? 'Gerando...' : 'Gerar ranking'}
+          </button>
         </div>
       </section>
 
@@ -108,7 +480,7 @@ export default function EquiDarUI() {
       {/* Ranking */}
       <section className="px-4 pt-2">
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-lg font-semibold text-blue-800">Ranking de prioridade (simulado)</h3>
+          <h3 className="text-lg font-semibold text-blue-800">Ranking de prioridade </h3>
           <span className="text-xs text-gray-500">Ordenado por índice de carência</span>
         </div>
       </section>
@@ -155,7 +527,6 @@ export default function EquiDarUI() {
         isOpen={!!selectedSchool}
         onClose={() => setSelectedSchool(null)}
         school={selectedSchool}
-        aiDescription="Esta escola apresenta um índice de carência significativo, principalmente nas áreas de infraestrutura tecnológica e biblioteca. Com base nos dados históricos, investimentos em conectividade e acervo bibliográfico teriam alto impacto no desempenho dos alunos."
       />
 
       {/* Insights */}

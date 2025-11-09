@@ -1,6 +1,7 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { EquidarService } from '../services/api/EquidarService';
 
 const MUNICIPIOS_DATA = [
   { nome: "João Pessoa", lat: -7.115, lng: -34.863, carencia: 45 },
@@ -27,8 +28,28 @@ const getCategoria = (valor: number): string => {
 };
 
 const CarenciaMap: React.FC = () => {
+  const [municipios, setMunicipios] = useState<any[]>([]);
   const mapContainer = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
+  const equidarService = new EquidarService();
+
+  useEffect(() => {
+    const fetchRankings = async () => {
+      try {
+        const rankings = await equidarService.getMunicipalityRankings();
+        // Converter score (0-1) para percentual (0-100)
+        const formattedRankings = rankings.map(r => ({
+          ...r,
+          carencia: Math.round((1 - r.score) * 100) // Inverte o score para representar carência
+        }));
+        setMunicipios(formattedRankings);
+      } catch (error) {
+        console.error('Erro ao buscar rankings:', error);
+      }
+    };
+
+    fetchRankings();
+  }, []);
 
   useEffect(() => {
     if (mapRef.current || !mapContainer.current) return;

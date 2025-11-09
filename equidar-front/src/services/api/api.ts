@@ -16,7 +16,7 @@ interface ApiError {
 export class ApiService {
   private api: AxiosInstance;
   
-  constructor(baseURL: string = process.env.REACT_APP_API_URL || '') {
+  constructor(baseURL: string = import.meta.env.VITE_API_URL || '') {
     this.api = axios.create({
       baseURL,
       headers: {

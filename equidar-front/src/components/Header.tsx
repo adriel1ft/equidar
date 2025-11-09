@@ -1,5 +1,6 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
+import logo from "../assets/logo.png"; // Importando o logo
 
 export default function Header() {
   const location = useLocation();
@@ -7,7 +8,9 @@ export default function Header() {
 
   return (
     <header className="flex justify-between items-center px-4 py-3 bg-white shadow-sm sticky top-0 z-50">
-      <h1 className="text-xl font-bold text-blue-700">EquiDar</h1>
+      <Link to="/" className="flex items-center">
+        <img src={logo} alt="EquiDar Logo" className="h-20" /> {/* Adicionando o logo */}
+      </Link>
       <div className="flex gap-2 items-center">
         {isHome ? (
           <Link to="/explorar" className="bg-blue-700 text-white px-4 py-2 rounded">

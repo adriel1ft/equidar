@@ -14,6 +14,17 @@ class Municipality(BaseModel):
     revenue_per_capita: Optional[float] = None
     polygon: Optional[dict] = None
 
+class MunicipalitySchool(BaseModel):
+    # SG_UF,CO_MUNICIPIO,NO_MUNICIPIO,ID_ESCOLA,NO_ESCOLA,REDE,ORIGEM,CATEGORY
+    sg_uf: str
+    co_municipio: str
+    no_municipio: str
+    id_escola: str
+    no_escola: str
+    rede: str
+    origem: str
+    category: str
+
 # IDEB domain models
 class SchoolType(str, Enum):
     MUNICIPAL = "Municipal"

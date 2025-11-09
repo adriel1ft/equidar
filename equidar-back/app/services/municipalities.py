@@ -25,3 +25,18 @@ class MunicipalityService:
     
     def list_all(self) -> List[Municipality]:
         return self.items
+    
+    def get_all_schools_for_city(self, municipality_id: str) -> List[dict]:
+        municipality = self.get(municipality_id)
+        if municipality:
+            return municipality.schools
+        return []
+    
+    def get_rankings(self) -> List[dict]:
+        # Example ranking logic based on number of schools
+        rankings = sorted(
+            [{'municipality_id': m.id, 'name': m.name, 'school_count': len(m.schools)} for m in self.items],
+            key=lambda x: x['school_count'],
+            reverse=True
+        )
+        return rankings
