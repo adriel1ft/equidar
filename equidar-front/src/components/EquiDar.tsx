@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { MapPin, Info, Share2 } from "lucide-react";
 import CarenciaMap from "./Mapping";
+import { SchoolDetailModal } from "./SchoolDetails";
 
 /**
  * EquiDar – UI Wireframe (mobile‑first)
@@ -56,6 +57,7 @@ export default function EquiDarUI() {
   const [redeFiltro, setRedeFiltro] = useState("");
   const [zonaFiltro, setZonaFiltro] = useState("");
   const [busca, setBusca] = useState("");
+  const [selectedSchool, setSelectedSchool] = useState(null as Escola | null);
 
   useEffect(() => {
     runSelfTests();
@@ -134,7 +136,10 @@ export default function EquiDarUI() {
                 Principais faltas: {e.faltas.join(", ")}
               </p>
               <div className="flex gap-2">
-                <button className="px-3 py-1 rounded border text-sm">
+                <button 
+                  onClick={() => setSelectedSchool(e)}
+                  className="px-3 py-1 rounded border text-sm"
+                >
                   <Info className="w-4 h-4 inline mr-1" /> Ver mais
                 </button>
                 <button className="px-3 py-1 rounded border text-sm">
@@ -145,6 +150,13 @@ export default function EquiDarUI() {
           </div>
         ))}
       </main>
+
+      <SchoolDetailModal 
+        isOpen={!!selectedSchool}
+        onClose={() => setSelectedSchool(null)}
+        school={selectedSchool}
+        aiDescription="Esta escola apresenta um índice de carência significativo, principalmente nas áreas de infraestrutura tecnológica e biblioteca. Com base nos dados históricos, investimentos em conectividade e acervo bibliográfico teriam alto impacto no desempenho dos alunos."
+      />
 
       {/* Insights */}
       <section className="px-4 py-8 bg-gray-100">

@@ -14,3 +14,20 @@ body {
   padding: 10px;
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
+
+button {
+  cursor: pointer;
+}
+
+.overflow-hidden {
+  overflow: hidden;
+}
+
+.leaflet-container {
+  z-index: 10 !important;
+}
+
+/* Classe para o modal ficar sempre acima */
+.modal-overlay {
+  z-index: 50 !important;
+}

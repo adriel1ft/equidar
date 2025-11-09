@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
-import mapboxgl from 'mapbox-gl';
-import "mapbox-gl/dist/mapbox-gl.css";
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 
 const MUNICIPIOS_DATA = [
   { nome: "João Pessoa", lat: -7.115, lng: -34.863, carencia: 45 },
@@ -28,77 +28,65 @@ const getCategoria = (valor: number): string => {
 
 const CarenciaMap: React.FC = () => {
   const mapContainer = useRef<HTMLDivElement>(null);
-  const map = useRef<mapboxgl.Map | null>(null);
-
-  const initializeMap = () => {
-    if (!mapContainer.current || map.current) return;
-
-    mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_TOKEN;;
-
-    try {
-      map.current = new mapboxgl.Map({
-        container: mapContainer.current,
-        style: "mapbox://styles/mapbox/light-v11",
-        center: [-36.0, -7.5], // Centro da Paraíba
-        zoom: 7,
-        pitch: 30, // Adiciona uma inclinação para melhor visualização
-      });
-
-      map.current.addControl(
-        new mapboxgl.NavigationControl({
-          visualizePitch: true,
-        }),
-        "top-right"
-      );
-
-      map.current.on("load", () => {
-        MUNICIPIOS_DATA.forEach((municipio) => {
-          const color = getCorCarencia(municipio.carencia);
-          
-          // Cria o elemento do marcador
-          const el = document.createElement("div");
-          el.className = "carencia-marker";
-          el.style.backgroundColor = color;
-          el.style.width = "40px";
-          el.style.height = "40px";
-          el.style.borderRadius = "50%";
-          el.style.border = "3px solid white";
-          el.style.boxShadow = "0 2px 8px rgba(0,0,0,0.2)";
-          el.style.display = "flex";
-          el.style.alignItems = "center";
-          el.style.justifyContent = "center";
-          el.style.fontWeight = "bold";
-          el.style.color = "white";
-          el.style.fontSize = "12px";
-          el.textContent = municipio.carencia.toString();
-
-          // Cria o popup
-          const popup = new mapboxgl.Popup({ offset: 25 }).setHTML(`
-            <div style="padding: 12px;">
-              <h3 style="font-weight: bold; margin-bottom: 8px;">${municipio.nome}</h3>
-              <p style="margin: 0;">Índice de Carência: ${municipio.carencia}%</p>
-              <p style="margin: 4px 0 0; font-size: 12px; color: ${color};">
-                ${getCategoria(municipio.carencia)}
-              </p>
-            </div>
-          `);
-
-          new mapboxgl.Marker(el)
-            .setLngLat([municipio.lng, municipio.lat])
-            .setPopup(popup)
-            .addTo(map.current!);
-        });
-      });
-    } catch (error) {
-      console.error("Erro ao inicializar o mapa:", error);
-    }
-  };
+  const mapRef = useRef<L.Map | null>(null);
 
   useEffect(() => {
-    initializeMap();
+    if (mapRef.current || !mapContainer.current) return;
+
+    // Inicializa o mapa
+    mapRef.current = L.map(mapContainer.current).setView([-7.5, -36.0], 7);
+
+    // Adiciona camada de tiles do OpenStreetMap
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap contributors',
+      maxZoom: 19,
+    }).addTo(mapRef.current);
+
+    // Adiciona marcadores
+    MUNICIPIOS_DATA.forEach((municipio) => {
+      const color = getCorCarencia(municipio.carencia);
+      
+      // Cria ícone customizado
+      const customIcon = L.divIcon({
+        className: 'custom-marker',
+        html: `
+          <div style="
+            background-color: ${color};
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 3px solid white;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: white;
+            font-size: 12px;
+          ">${municipio.carencia}</div>
+        `,
+        iconSize: [40, 40],
+        iconAnchor: [20, 20],
+      });
+
+      // Adiciona marcador com popup
+      L.marker([municipio.lat, municipio.lng], { icon: customIcon })
+        .addTo(mapRef.current!)
+        .bindPopup(`
+          <div style="padding: 12px; font-family: sans-serif;">
+            <h3 style="font-weight: bold; margin-bottom: 8px; font-size: 16px;">${municipio.nome}</h3>
+            <p style="margin: 0;">Índice de Carência: <strong>${municipio.carencia}%</strong></p>
+            <p style="margin: 4px 0 0; font-size: 12px; color: ${color}; font-weight: 600;">
+              ${getCategoria(municipio.carencia)}
+            </p>
+          </div>
+        `);
+    });
+
     return () => {
-      if (map.current) {
-        map.current.remove();
+      if (mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current = null;
       }
     };
   }, []);
@@ -122,8 +110,13 @@ const CarenciaMap: React.FC = () => {
         </div>
       </div>
 
-      <div ref={mapContainer} className="rounded-lg h-[500px]" />
+      <div 
+        ref={mapContainer} 
+        className="rounded-lg h-[500px] w-full"
+        style={{ minHeight: '500px' }}
+      />
 
+      {/* --- 
       <div className="mt-4 text-sm text-gray-600">
         <p className="font-medium">Observações:</p>
         <ul className="list-disc list-inside mt-2">
@@ -132,6 +125,7 @@ const CarenciaMap: React.FC = () => {
           <li>Use os controles para ajustar a visualização</li>
         </ul>
       </div>
+      */}
     </div>
   );
 };

@@ -1,5 +1,5 @@
-import axios, { AxiosInstance, AxiosRequestConfig } from 'axios';
-import { ApiResponse, ApiError } from './types';
+import axios from 'axios';
+import type { AxiosInstance, AxiosRequestConfig } from 'axios';
 
 interface ApiResponse<T> {
   data: T;
