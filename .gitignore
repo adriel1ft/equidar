@@ -1,0 +1,12 @@
+.streamlit
+node_modules
+.venv
+.env
+a.py
+b.py
+c.py
+d.py
+explore*
+map.html
+municipios*.csv
+siope.ipynb
