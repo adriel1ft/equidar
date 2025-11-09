@@ -1,28 +1,15 @@
+# app/services/infra.py
 import pandas as pd
 import numpy as np
-from typing import Optional, Tuple
-
-def _normalize(s: str) -> str:
-    import unicodedata, re
-    s = (s or "").strip().lower()
-    s = unicodedata.normalize("NFKD", s)
-    s = "".join(ch for ch in s if not unicodedata.combining(ch))
-    s = re.sub(r"\s+", " ", s)
-    return s
-
-def _pick(df: pd.DataFrame, candidates) -> Optional[str]:
-    lower = {c.lower(): c for c in df.columns}
-    for c in candidates:
-        if c in df.columns:
-            return c
-        if c.lower() in lower:
-            return lower[c.lower()]
-    return None
 
 class InfraService:
     """
-    Carrega infraestrutura FUND e MED e expõe tabela unificada por escola:
-      [ID_ESCOLA, escola, municipio, municipio_norm, score_fund, score_med, score_infraestrutura]
+    Lê infra FUND e MED por ID de escola e calcula um score combinado.
+    Saída: df_merged com colunas:
+      - ID_ESCOLA (str)
+      - score_fund (float, opcional)
+      - score_med (float, opcional)
+      - score_infraestrutura (float, média entre fund/med se ambos existirem; senão o que houver)
     """
     def __init__(self, csv_fund: str, csv_med: str):
         self.df_fund = self._load_one(csv_fund, nivel="FUND")
@@ -30,44 +17,44 @@ class InfraService:
         self.df_merged = self._merge_levels(self.df_fund, self.df_med)
 
     def _load_one(self, path: str, nivel: str) -> pd.DataFrame:
-        df = pd.read_csv(path, dtype={"ID_ESCOLA": str}, low_memory=False)
-        # tenta achar nomes comuns
-        id_col   = _pick(df, ["ID_ESCOLA", "CO_ENTIDADE"]) or "ID_ESCOLA"
-        esc_col  = _pick(df, ["NO_ESCOLA", "NO_ENTIDADE", "NO_ESCOLA"]) or "NO_ENTIDADE"
-        mun_col  = _pick(df, ["NO_MUNICIPIO", "MUNICIPIO", "NO_MUNIC"]) or "NO_MUNICIPIO"
-        scorecol = _pick(df, ["score_infraestrutura", "SCORE_INFRA", "SCORE"]) or "score_infraestrutura"
+        df = pd.read_csv(path, dtype=str, low_memory=False)
+        # padroniza nomes e remove coluna inútil
+        cols = [c.strip() for c in df.columns]
+        df.columns = cols
+        if "Unnamed: 0" in df.columns:
+            df = df.drop(columns=["Unnamed: 0"])
 
-        # se não existir score, deixe NaN (ou calcule aqui com sua função de métricas)
-        if scorecol not in df.columns:
-            df[scorecol] = np.nan
+        # exige ID e tenta achar a coluna de score (nome já existe nos seus CSVs)
+        if "ID_ESCOLA" not in df.columns:
+            # tenta alternativas
+            for alt in ["id_escola", "CO_ENTIDADE", "co_entidade"]:
+                if alt in df.columns:
+                    df["ID_ESCOLA"] = df[alt].astype(str)
+                    break
+        if "ID_ESCOLA" not in df.columns:
+            raise ValueError(f"[{nivel}] coluna ID_ESCOLA não encontrada em {path}. Colunas: {list(df.columns)}")
 
-        out = df[[id_col, esc_col, mun_col, scorecol]].copy()
-        out.columns = ["ID_ESCOLA", "escola", "municipio", f"score_{nivel.lower()}"]
-        out["municipio_norm"] = out["municipio"].map(_normalize)
+        score_col = None
+        for cand in ["score_infraestrutura", "score", "score_total"]:
+            if cand in df.columns:
+                score_col = cand
+                break
+        if score_col is None:
+            # se não houver score pronto, cria vazio (ou calcule aqui caso queira)
+            df["score_infraestrutura"] = np.nan
+            score_col = "score_infraestrutura"
+
+        out = df[["ID_ESCOLA", score_col]].copy()
+        out.columns = ["ID_ESCOLA", f"score_{nivel.lower()}"]
+        # força numérico
+        out[f"score_{nivel.lower()}"] = pd.to_numeric(out[f"score_{nivel.lower()}"], errors="coerce")
+        # garante string
         out["ID_ESCOLA"] = out["ID_ESCOLA"].astype(str)
+        # 1 linha por escola (caso venham duplicadas)
+        out = out.groupby("ID_ESCOLA", as_index=False).agg({f"score_{nivel.lower()}": "mean"})
         return out
 
     def _merge_levels(self, fund: pd.DataFrame, med: pd.DataFrame) -> pd.DataFrame:
-        # junta por ID_ESCOLA (preferindo nomes não nulos)
-        m = pd.merge(
-            fund.drop_duplicates("ID_ESCOLA"),
-            med.drop_duplicates("ID_ESCOLA"),
-            on="ID_ESCOLA",
-            how="outer",
-            suffixes=("_fund", "_med"),
-        )
-        # escolhe nome da escola/municipio
-        m["escola"] = m["escola_fund"].combine_first(m["escola_med"])
-        m["municipio"] = m["municipio_fund"].combine_first(m["municipio_med"])
-        m["municipio_norm"] = m["municipio_norm_fund"].combine_first(m["municipio_norm_med"])
-        m["score_fund"] = m["score_fund"]
-        m["score_med"]  = m["score_med"]
-
-        # score combinado (preferir FUND se existir, senão MED; ou média dos dois se ambos existirem)
-        m["score_infraestrutura"] = np.where(
-            m["score_fund"].notna() & m["score_med"].notna(),
-            (m["score_fund"] + m["score_med"]) / 2.0,
-            m["score_fund"].combine_first(m["score_med"])
-        )
-        cols = ["ID_ESCOLA", "escola", "municipio", "municipio_norm", "score_fund", "score_med", "score_infraestrutura"]
-        return m[cols]
+        m = pd.merge(fund, med, on="ID_ESCOLA", how="outer")
+        m["score_infraestrutura"] = m[["score_fund", "score_med"]].mean(axis=1, skipna=True)
+        return m
