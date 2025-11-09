@@ -1,45 +1,52 @@
-# app/routers/infra.py
+# app/routes/infra.py
 from fastapi import APIRouter, HTTPException
 from typing import List, Dict
 import pandas as pd
 
 from app.services.infra import InfraService
+from app.services.ideb import IDEBService
 
 routes = APIRouter(prefix="/infra", tags=["infra"])
 
-# Ajuste os caminhos/EXTENSÕES dos seus arquivos de infra:
 infra_service = InfraService(
-    "data/PB_INFRAESTRUTURA_FUND_SCORE_2023.csv",  # coloque a extensão correta
+    "data/PB_INFRAESTRUTURA_FUND_SCORE_2023.csv",
     "data/PB_INFRAESTRUTURA_MED_SCORE_2023.csv",
 )
-
-def _normalize(s: str) -> str:
-    import unicodedata, re
-    s = (s or "").strip().lower()
-    s = unicodedata.normalize("NFKD", s)
-    s = "".join(ch for ch in s if not unicodedata.combining(ch))
-    s = re.sub(r"\s+", " ", s)
-    return s
+ideb_service = IDEBService(
+    "data/IDEB_ANOS_INICIAIS_PB.csv",
+    "data/IDEB_ANOS_FINAIS_PB.csv",
+    "data/IDEB_ENSINO_MEDIO_PB.csv",
+)
 
 @routes.get("/municipios/{cidade}")
 def infra_por_cidade(cidade: str) -> List[Dict]:
-    cidade_norm = _normalize(cidade)
-    df = infra_service.df_merged
-    sub = df[df["municipio_norm"] == cidade_norm].copy()
-    if sub.empty:
-        raise HTTPException(status_code=404, detail=f"Não encontrei infraestrutura para '{cidade}'.")
+    # 1) IDEB: traz as escolas da cidade (tem nome/municipio/id)
+    escolas = ideb_service.ideb_by_city(cidade)  # [{id_escola, escola, ideb:{...}}, ...]
+    if not escolas:
+        raise HTTPException(status_code=404, detail=f"Não encontrei escolas IDEB para '{cidade}'.")
+    df_escolas = pd.DataFrame(escolas)
+    df_escolas["id_escola"] = df_escolas["id_escola"].astype(str)
 
-    sub = sub.sort_values(["score_infraestrutura", "escola"], ascending=[False, True])
+    # 2) INFRA: só tem ID e scores; junta por ID
+    df_infra = infra_service.df_merged.copy()
+    df_infra["ID_ESCOLA"] = df_infra["ID_ESCOLA"].astype(str)
+
+    merged = pd.merge(
+        df_escolas[["id_escola", "escola"]],
+        df_infra[["ID_ESCOLA", "score_fund", "score_med", "score_infraestrutura"]],
+        left_on="id_escola", right_on="ID_ESCOLA", how="left"
+    ).drop(columns=["ID_ESCOLA"])
+
+    # 3) resposta
     out: List[Dict] = []
-    for r in sub.itertuples(index=False):
+    for r in merged.itertuples(index=False):
         out.append({
-            "id_escola": r.ID_ESCOLA,
+            "id_escola": r.id_escola,
             "escola": r.escola,
-            "municipio": r.municipio,
-            "score_infraestrutura": None if pd.isna(r.score_infraestrutura) else float(r.score_infraestrutura),
+            "score_infraestrutura": None if pd.isna(getattr(r, "score_infraestrutura")) else float(getattr(r, "score_infraestrutura")),
             "scores_infra": {
-                "FUND": None if pd.isna(r.score_fund) else float(r.score_fund),
-                "MED":  None if pd.isna(r.score_med) else float(r.score_med),
+                "FUND": None if pd.isna(getattr(r, "score_fund")) else float(getattr(r, "score_fund")),
+                "MED":  None if pd.isna(getattr(r, "score_med")) else float(getattr(r, "score_med")),
             },
         })
     return out
